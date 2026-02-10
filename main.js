@@ -21,14 +21,18 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
-    resizable: false,
+    resizable: true,
+    maximizable: true,
+    fullscreenable: true,
     center: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
   })
 
-  mainWindow.loadFile(path.join(__dirname, '../src/index.html'))
+  mainWindow.loadFile(path.join(__dirname, '..', 'filesfyfrontend', 'src', 'index.html'))
+
+  mainWindow.maximize()
 
   mainWindow.on('closed', () => {
     mainWindow = null

@@ -1,23 +1,12 @@
 {
   "name": "filesfyelectron",
   "version": "1.0.0",
-  "description": "",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fagnergomes777/filesfyelectron.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/fagnergomes777/filesfyelectron/issues"
-  },
-  "homepage": "https://github.com/fagnergomes777/filesfyelectron#readme",
   "devDependencies": {
     "electron": "^40.2.1"
   }

@@ -1,0 +1,443 @@
+/* ===== Estilos Globais ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  color: #1e293b;
+  height: 100vh;
+  overflow: hidden;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* ===== Cabeçalho ===== */
+.app-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #cbd5e1;
+  background: linear-gradient(180deg, rgba(241, 245, 250, 0.95) 0%, rgba(224, 242, 254, 0.9) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 56px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-image-desktop {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.user-info img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #0ea5e9;
+}
+
+.btn-logout {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* ===== Conteúdo Principal ===== */
+#wizard {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+#wizard::-webkit-scrollbar {
+  width: 8px;
+}
+
+#wizard::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#wizard::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+#wizard::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===== Container de Planos ===== */
+.plans-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.plans-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+}
+
+.plans-header p {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* ===== Cards de Planos ===== */
+.plan-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.plan-card:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.15);
+  transform: translateY(-4px);
+}
+
+.plan-card.free-card {
+  border-color: #cbd5e1;
+}
+
+.plan-card.pro-card {
+  border-color: #0ea5e9;
+}
+
+.plan-card.annual-card {
+  border-color: #10b981;
+}
+
+/* Badge do Plano */
+.plan-badge {
+  display: inline-block;
+  background: #f0f9ff;
+  color: #475569;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+.plan-badge-pro {
+  background: #dbeafe;
+  color: #0369a1;
+}
+
+.plan-badge-annual {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+}
+
+.plan-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 12px;
+}
+
+/* Preço */
+.plan-pricing {
+  margin: 16px 0 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.plan-pricing .original-price {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: line-through;
+  margin-bottom: 4px;
+}
+
+.plan-pricing .price {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  display: inline;
+}
+
+.plan-pricing .duration {
+  font-size: 14px;
+  color: #64748b;
+  display: inline;
+  margin-left: 4px;
+}
+
+.plan-pricing .discount {
+  display: block;
+  color: #10b981;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Features */
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+  flex: 1;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.feature-item.included {
+  color: #334155;
+  font-weight: 500;
+}
+
+.feature-item.excluded {
+  color: #94a3b8;
+  opacity: 0.6;
+}
+
+.feature-icon {
+  font-weight: bold;
+  min-width: 16px;
+}
+
+.feature-item.included .feature-icon {
+  color: #10b981;
+}
+
+.feature-item.excluded .feature-icon {
+  color: #cbd5e1;
+}
+
+/* Botões */
+button[class*="btn-"] {
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  padding: 12px;
+  margin-top: auto;
+}
+
+.btn-primary {
+  background: #0ea5e9;
+  color: white;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.btn-primary:hover {
+  background: #0284c7;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #334155;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+
+.btn-free {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-free:hover {
+  background: #e2e8f0;
+}
+
+.btn-pro {
+  background: #0ea5e9;
+  color: white;
+}
+
+.btn-pro:hover {
+  background: #0284c7;
+}
+
+/* ===== Rodapé ===== */
+.app-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #cbd5e1;
+  background: #f8fafc;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* ===== Tema Escuro ===== */
+body.theme-dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1a2332 100%);
+  color: #e2e8f0;
+}
+
+body.theme-dark .app-header {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(23, 37, 63, 0.9) 100%);
+  border-bottom-color: #334155;
+}
+
+body.theme-dark .app-header h1 {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body.theme-dark .plans-header h1 {
+  color: #f1f5f9;
+}
+
+body.theme-dark .plans-header p {
+  color: #94a3b8;
+}
+
+body.theme-dark .plan-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .plan-card:hover {
+  border-color: #0ea5e9;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
+}
+
+body.theme-dark .plan-card h2 {
+  color: #f1f5f9;
+}
+
+body.theme-dark .plan-pricing {
+  border-bottom-color: #334155;
+}
+
+body.theme-dark .plan-pricing .price {
+  color: #f1f5f9;
+}
+
+body.theme-dark .feature-item {
+  color: #cbd5e1;
+}
+
+body.theme-dark .feature-item.included {
+  color: #e2e8f0;
+}
+
+body.theme-dark .btn-secondary {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.theme-dark .btn-secondary:hover {
+  background: #475569;
+}
+
+body.theme-dark .btn-free {
+  background: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+body.theme-dark .btn-free:hover {
+  background: #475569;
+}
+
+body.theme-dark .app-footer {
+  background: #1e293b;
+  border-top-color: #334155;
+  color: #94a3b8;
+}
+
+body.theme-dark .user-info {
+  color: #cbd5e1;
+}

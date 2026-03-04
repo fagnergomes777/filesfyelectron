@@ -26,13 +26,18 @@ function createWindow () {
     fullscreenable: true,
     center: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
     }
   })
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'filesfyfrontend', 'src', 'index.html'))
+  mainWindow.loadFile(path.join(__dirname, 'electron.html'))
 
   mainWindow.maximize()
+
+  // Abrir DevTools em desenvolvimento (comentar em produção)
+  // mainWindow.webContents.openDevTools()
 
   mainWindow.on('closed', () => {
     mainWindow = null

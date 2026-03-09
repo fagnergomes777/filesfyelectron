@@ -1,6 +1,10 @@
 ﻿const API_BASE_URL = 'http://localhost:3001/api';
 const PLANS_ENDPOINT = 'http://localhost:3001/api/subscriptions/plans';
 
+// Client ID lido do window.__ENV__ (injetado pelo preload) ou fallback vazio
+// Configure GOOGLE_CLIENT_ID em filesfybackend/.env e exponha via preload
+const GOOGLE_CLIENT_ID = (window.__ENV__ && window.__ENV__.GOOGLE_CLIENT_ID) || '';
+
 let currentUser = null;
 let selectedPlan = null;
 let cachedPlans = [];
@@ -125,7 +129,8 @@ function normalizePlans(response) {
 }
 
 function getStoredUser() {
-  const raw = localStorage.getItem('user_data');
+  // Tenta a chave padronizada 'user' primeiro, depois o legado 'user_data'
+  const raw = localStorage.getItem('user') || localStorage.getItem('user_data');
 
   if (!raw) {
     return null;
@@ -134,6 +139,7 @@ function getStoredUser() {
   try {
     return JSON.parse(raw);
   } catch (error) {
+    localStorage.removeItem('user');
     localStorage.removeItem('user_data');
     return null;
   }
@@ -265,22 +271,74 @@ function showLoginPrompt(planId) {
   wizardEl.innerHTML = `
     <section class="plans-container">
       <header class="plans-header">
-        <h1>Faça login para continuar</h1>
-        <p>${escapeHtml(plan ? plan.name : 'Plano PRO')} - ${escapeHtml(price)}${escapeHtml(interval)}</p>
+        <h1>🛒 Quase lá! Finalize sua compra</h1>
+        <p>${escapeHtml(plan ? plan.name : 'Plano PRO')} — ${escapeHtml(price)}${escapeHtml(interval)}</p>
+        <p style="font-size:13px;color:#888;margin-top:4px;">Faça login com sua conta Google para prosseguir</p>
       </header>
 
       <div class="plans-grid">
-        <article class="plan-card pro-card">
-          <div class="plan-features">
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Login necessário para planos pagos</span></div>
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Use o botão abaixo para login de teste</span></div>
-          </div>
-          <button class="btn-primary" id="btn-test-login">Entrar com /auth/test-login</button>
-          <button class="btn-secondary" id="btn-back-plans">Voltar aos planos</button>
+        <article class="plan-card pro-card" style="max-width:420px;margin:0 auto;">
+
+          <!-- Botão Google Sign-In -->
+          <div id="google-signin-electron" style="margin-bottom:16px;"></div>
+
+          <div style="text-align:center;color:#aaa;font-size:13px;margin-bottom:12px;">— ou —</div>
+
+          <button class="btn-primary" id="btn-test-login" style="width:100%;">
+            🧪 Entrar como Usuário Teste
+          </button>
+
+          <button class="btn-secondary" id="btn-back-plans" style="width:100%;margin-top:10px;">
+            ← Voltar aos planos
+          </button>
         </article>
       </div>
     </section>
   `;
+
+  // Inicializar Google Sign-In se SDK já carregado
+  const tryInitGoogle = () => {
+    if (window.google && window.google.accounts && GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('USE_YOUR')) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          await handleGoogleResponse(response.credential, planId);
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      const container = document.getElementById('google-signin-electron');
+      if (container) {
+        window.google.accounts.id.renderButton(container, {
+          type: 'standard',
+          size: 'large',
+          text: 'signin_with',
+          locale: 'pt-BR',
+          width: 380,
+        });
+      }
+    } else if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('USE_YOUR')) {
+      // Client ID não configurado: esconder div e mostrar aviso
+      const container = document.getElementById('google-signin-electron');
+      if (container) {
+        container.innerHTML = '<p style="color:#f87171;font-size:12px;text-align:center;">⚠️ GOOGLE_CLIENT_ID não configurado</p>';
+      }
+    }
+  };
+
+  // SDK pode ainda estar carregando
+  if (window.google && window.google.accounts) {
+    tryInitGoogle();
+  } else {
+    const interval = setInterval(() => {
+      if (window.google && window.google.accounts) {
+        clearInterval(interval);
+        tryInitGoogle();
+      }
+    }, 200);
+    // Desistir após 5s
+    setTimeout(() => clearInterval(interval), 5000);
+  }
 
   const testLoginButton = document.getElementById('btn-test-login');
   const backButton = document.getElementById('btn-back-plans');
@@ -335,6 +393,56 @@ function selectPlan(planId) {
   showLoginPrompt(planId);
 }
 
+// Handler do callback do Google Sign-In para o Electron
+async function handleGoogleResponse(credential, planId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/google-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: credential }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || `Erro HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data || !data.user || !data.token) {
+      throw new Error('Resposta de login inválida');
+    }
+
+    // Salvar com chaves padronizadas (compatível com public/ e src/)
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.subscription) {
+      localStorage.setItem('subscription', JSON.stringify(data.subscription));
+    }
+
+    currentUser = data.user;
+    selectedPlan = planId || selectedPlan || 'pro';
+    updateHeader();
+    showHomeScreen(selectedPlan);
+  } catch (error) {
+    wizardEl.innerHTML = `
+      <section class="plans-container">
+        <header class="plans-header">
+          <h1>Erro no login com Google</h1>
+          <p>${escapeHtml(error.message || 'Verifique a conexão com o servidor')}</p>
+        </header>
+        <div class="plans-grid">
+          <article class="plan-card pro-card">
+            <button class="btn-secondary" id="btn-retry-google">Tentar novamente</button>
+          </article>
+        </div>
+      </section>
+    `;
+    const retryBtn = document.getElementById('btn-retry-google');
+    if (retryBtn) retryBtn.addEventListener('click', () => showLoginPrompt(planId));
+  }
+}
+
 async function handleTestLogin() {
   try {
     const payload = {
@@ -360,8 +468,12 @@ async function handleTestLogin() {
       throw new Error('Resposta de login inválida');
     }
 
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('user_data', JSON.stringify(data.user));
+    // Salvar com chaves padronizadas
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.subscription) {
+      localStorage.setItem('subscription', JSON.stringify(data.subscription));
+    }
     currentUser = data.user;
     updateHeader();
     showHomeScreen(selectedPlan || 'pro');
@@ -397,6 +509,10 @@ function setupLogout() {
   }
 
   logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('subscription');
+    // remover chaves legadas caso existam
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_data');
     currentUser = null;

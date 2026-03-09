@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, dialog, Menu, nativeTheme } = require('electron')
 const path = require('path')
 
+// Carregar variáveis de ambiente do .env (na raiz do Electron ou da workspace)
+require('dotenv').config({ path: path.join(__dirname, '.env') })
+require('dotenv').config({ path: path.join(__dirname, '..', 'filesfybackend', '.env'), override: false })
 let mainWindow
 let currentTheme = null // Será detectado automaticamente
 

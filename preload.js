@@ -11,3 +11,9 @@ contextBridge.exposeInMainWorld('electron', {
   on: (channel, callback) => ipcRenderer.on(channel, (event, ...args) => callback(...args)),
   onThemeChanged: (callback) => ipcRenderer.on('theme-changed', (event, theme) => callback(theme))
 })
+
+// Expor variáveis de ambiente seguras para o renderer (sem expor segredos)
+contextBridge.exposeInMainWorld('__ENV__', {
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
+  API_URL: process.env.API_URL || 'http://localhost:3001'
+})

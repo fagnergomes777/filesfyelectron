@@ -282,12 +282,6 @@ function showLoginPrompt(planId) {
           <!-- Botão Google Sign-In -->
           <div id="google-signin-electron" style="margin-bottom:16px;"></div>
 
-          <div style="text-align:center;color:#aaa;font-size:13px;margin-bottom:12px;">— ou —</div>
-
-          <button class="btn-primary" id="btn-test-login" style="width:100%;">
-            🧪 Entrar como Usuário Teste
-          </button>
-
           <button class="btn-secondary" id="btn-back-plans" style="width:100%;margin-top:10px;">
             ← Voltar aos planos
           </button>
@@ -340,12 +334,7 @@ function showLoginPrompt(planId) {
     setTimeout(() => clearInterval(interval), 5000);
   }
 
-  const testLoginButton = document.getElementById('btn-test-login');
   const backButton = document.getElementById('btn-back-plans');
-
-  if (testLoginButton) {
-    testLoginButton.addEventListener('click', handleTestLogin);
-  }
 
   if (backButton) {
     backButton.addEventListener('click', showPlansScreen);
@@ -440,66 +429,6 @@ async function handleGoogleResponse(credential, planId) {
     `;
     const retryBtn = document.getElementById('btn-retry-google');
     if (retryBtn) retryBtn.addEventListener('click', () => showLoginPrompt(planId));
-  }
-}
-
-async function handleTestLogin() {
-  try {
-    const payload = {
-      email: `user_${Date.now()}@filesfy.test`,
-      name: `Usuário Teste ${Math.floor(Math.random() * 1000)}`
-    };
-
-    const response = await fetch(`${API_BASE_URL}/auth/test-login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data || !data.user || !data.token) {
-      throw new Error('Resposta de login inválida');
-    }
-
-    // Salvar com chaves padronizadas
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    if (data.subscription) {
-      localStorage.setItem('subscription', JSON.stringify(data.subscription));
-    }
-    currentUser = data.user;
-    updateHeader();
-    showHomeScreen(selectedPlan || 'pro');
-  } catch (error) {
-    wizardEl.innerHTML = `
-      <section class="plans-container">
-        <header class="plans-header">
-          <h1>Erro no login de teste</h1>
-          <p>Não foi possível autenticar no endpoint /auth/test-login.</p>
-        </header>
-
-        <div class="plans-grid">
-          <article class="plan-card pro-card">
-            <div class="plan-features">
-              <div class="feature-item excluded"><span class="feature-icon">✗</span><span>${escapeHtml(error.message || 'Erro desconhecido')}</span></div>
-            </div>
-            <button class="btn-secondary" id="btn-retry-plans">Voltar aos planos</button>
-          </article>
-        </div>
-      </section>
-    `;
-
-    const retryButton = document.getElementById('btn-retry-plans');
-    if (retryButton) {
-      retryButton.addEventListener('click', showPlansScreen);
-    }
   }
 }
 

@@ -1,68 +1,10 @@
-﻿const API_BASE_URL = 'http://localhost:3001/api';
-const PLANS_ENDPOINT = 'http://localhost:3001/api/subscriptions/plans';
-
-let currentUser = null;
-let selectedPlan = null;
-let cachedPlans = [];
-
+﻿// ===== Estado global =====
 let wizardEl = null;
-let userInfoEl = null;
-let logoutBtn = null;
+let selectedDevice = null;   // objeto completo { id, label, size, type }
+let selectedFileType = 'all';
+let scannedFiles = [];
 
-const DEFAULT_PLANS = [
-  {
-    id: 'free',
-    name: 'Filesfy FREE',
-    price: 0,
-    originalPrice: null,
-    discount: null,
-    interval: 'para sempre',
-    badge: 'Plano Básico',
-    button: 'Começar Grátis',
-    features: [
-      { name: 'Até 15 varreduras por mês', included: true },
-      { name: 'Limite 1GB por varredura', included: true },
-      { name: 'Máximo 50 arquivos', included: true },
-      { name: 'Recuperação básica', included: true },
-      { name: 'Suporte prioritário', included: false }
-    ]
-  },
-  {
-    id: 'pro',
-    name: 'Filesfy PRO',
-    price: 1599,
-    originalPrice: 1999,
-    discount: '20%',
-    interval: 'mês',
-    badge: 'Mais Popular',
-    button: 'Continuar',
-    features: [
-      { name: 'Limite 128GB por varredura', included: true },
-      { name: 'Recuperação avançada', included: true },
-      { name: 'Histórico de 90 dias', included: true },
-      { name: 'Sem anúncios', included: true },
-      { name: 'Exportação ilimitada', included: true }
-    ]
-  },
-  {
-    id: 'pro_annual',
-    name: 'Filesfy PRO Anual',
-    price: 12999,
-    originalPrice: 19999,
-    discount: '32%',
-    interval: 'ano',
-    badge: 'Melhor Custo-Benefício',
-    button: 'Continuar',
-    features: [
-      { name: 'Limite 128GB por varredura', included: true },
-      { name: 'Recuperação avançada', included: true },
-      { name: 'Histórico de 90 dias', included: true },
-      { name: 'Sem anúncios', included: true },
-      { name: 'Exportação ilimitada', included: true }
-    ]
-  }
-];
-
+// ===== Utilitários =====
 function escapeHtml(value) {
   return String(value || '')
     .replace(/&/g, '&amp;')
@@ -72,355 +14,310 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function formatCurrency(cents) {
-  if (!cents) {
-    return 'Grátis';
-  }
-
-  return `R$ ${(cents / 100).toFixed(2)}`;
-}
-
-function getCardClass(planId) {
-  if (planId === 'free') {
-    return 'plan-card free-card';
-  }
-
-  if (planId === 'pro_annual') {
-    return 'plan-card annual-card';
-  }
-
-  return 'plan-card pro-card';
-}
-
-function getBadgeClass(planId) {
-  if (planId === 'pro_annual') {
-    return 'plan-badge plan-badge-annual';
-  }
-
-  if (planId === 'pro') {
-    return 'plan-badge plan-badge-pro';
-  }
-
-  return 'plan-badge';
-}
-
-function getPlanButtonClass(planId) {
-  if (planId === 'free') {
-    return 'btn-free';
-  }
-
-  return 'btn-pro';
-}
-
-function normalizePlans(response) {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (response && Array.isArray(response.plans)) {
-    return response.plans;
-  }
-
-  return null;
-}
-
-function getStoredUser() {
-  const raw = localStorage.getItem('user_data');
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    localStorage.removeItem('user_data');
-    return null;
-  }
-}
-
-async function loadPlans() {
-  try {
-    const response = await fetch(PLANS_ENDPOINT, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const plans = normalizePlans(data);
-
-    if (!plans || plans.length === 0) {
-      throw new Error('Nenhum plano retornado pela API');
-    }
-
-    cachedPlans = plans;
-  } catch (error) {
-    cachedPlans = DEFAULT_PLANS;
-  }
-}
-
-function updateHeader() {
-  if (!userInfoEl || !logoutBtn) {
-    return;
-  }
-
-  if (!currentUser) {
-    userInfoEl.hidden = true;
-    logoutBtn.hidden = true;
-    userInfoEl.innerHTML = '';
-    return;
-  }
-
-  const displayName = currentUser.name || currentUser.nome || 'Usuário';
-  const planName = currentUser.plan || currentUser.tipo_de_plano || selectedPlan || 'FREE';
-  const avatar = currentUser.avatar_url || currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
-
-  userInfoEl.innerHTML = `
-    <img src="${escapeHtml(avatar)}" alt="${escapeHtml(displayName)}" />
-    <span>${escapeHtml(displayName)} <strong>(${escapeHtml(planName)})</strong></span>
-  `;
-
-  userInfoEl.hidden = false;
-  logoutBtn.hidden = false;
-}
-
-function renderPlanCards(plans) {
-  if (!plans || plans.length === 0) {
-    return '<p>Nenhum plano disponível no momento.</p>';
-  }
-
-  return plans.map((plan) => {
-    const price = formatCurrency(plan.price);
-    const duration = plan.interval ? `/${plan.interval}` : '';
-    const badgeClass = getBadgeClass(plan.id);
-    const cardClass = getCardClass(plan.id);
-    const buttonClass = getPlanButtonClass(plan.id);
-    const features = Array.isArray(plan.features) ? plan.features : [];
-
-    return `
-      <article class="${cardClass}">
-        <span class="${badgeClass}">${escapeHtml(plan.badge || 'Plano')}</span>
-        <h2>${escapeHtml(plan.name || 'Plano')}</h2>
-
-        <div class="plan-pricing">
-          ${plan.originalPrice ? `<span class="original-price">De ${formatCurrency(plan.originalPrice)}</span>` : ''}
-          <span class="price">${escapeHtml(price)}</span>
-          <span class="duration">${escapeHtml(duration)}</span>
-          ${plan.discount ? `<span class="discount">${escapeHtml(plan.discount)} OFF</span>` : ''}
-        </div>
-
-        <div class="plan-features">
-          ${features.map((feature) => {
-            const included = Boolean(feature && feature.included);
-            const itemClass = included ? 'feature-item included' : 'feature-item excluded';
-            const icon = included ? '' : '';
-            return `
-              <div class="${itemClass}">
-                <span class="feature-icon">${icon}</span>
-                <span>${escapeHtml(feature ? feature.name : '')}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-
-        <button class="${buttonClass}" data-plan-id="${escapeHtml(plan.id)}">${escapeHtml(plan.button || 'Selecionar')}</button>
-      </article>
-    `;
-  }).join('');
-}
-
-function showPlansScreen() {
+function showError(message) {
   wizardEl.innerHTML = `
-    <section class="plans-container">
-      <header class="plans-header">
-        <h1>Escolha seu Plano</h1>
-        <p>Selecione FREE para começar ou upgrade para PRO.</p>
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1>❌ Erro</h1>
+        <p>${escapeHtml(message)}</p>
       </header>
+      <button class="btn-primary" id="btn-retry">Tentar novamente</button>
+    </section>
+  `;
+  document.getElementById('btn-retry')?.addEventListener('click', showDeviceScreen);
+}
 
-      <div class="plans-grid">
-        ${renderPlanCards(cachedPlans)}
+// Mapa de ícones Font Awesome por tipo de dispositivo
+const DEVICE_ICONS = {
+  'HD interno':        '<i class="fa-solid fa-hard-drive"></i>',
+  'HD externo':        '<i class="fa-solid fa-hard-drive"></i>',
+  'HD':                '<i class="fa-solid fa-hard-drive"></i>',
+  'SSD interno':       '<i class="fa-solid fa-hard-drive"></i>',
+  'SSD externo':       '<i class="fa-solid fa-hard-drive"></i>',
+  'SSD':               '<i class="fa-solid fa-hard-drive"></i>',
+  'Pendrive':          '<i class="fa-brands fa-usb"></i>',
+  'Smartphone':        '<i class="fa-solid fa-mobile-screen"></i>',
+  'Câmera digital':    '<i class="fa-solid fa-camera"></i>',
+  'Cartão de memória': '<i class="fa-solid fa-memory"></i>',
+};
+
+function getDeviceIcon(type) {
+  return DEVICE_ICONS[type] || '<i class="fa-solid fa-hard-drive"></i>';
+}
+
+// ===== TELA 1: Seleção de dispositivo =====
+async function showDeviceScreen() {
+  wizardEl.innerHTML = `
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1><i class="fa-solid fa-magnifying-glass"></i> Selecione o Dispositivo</h1>
+        <p>Escolha o disco ou dispositivo que deseja varrer para recuperação de arquivos.</p>
+      </header>
+      <div id="devices-list" class="devices-list">
+        <p class="loading-text"><i class="fa-solid fa-spinner fa-spin"></i> Carregando dispositivos...</p>
       </div>
     </section>
   `;
 
-  const planButtons = wizardEl.querySelectorAll('[data-plan-id]');
-  planButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const planId = button.getAttribute('data-plan-id');
-      selectPlan(planId);
+  try {
+    if (!window.electronAPI || typeof window.electronAPI.listDevices !== 'function') {
+      throw new Error('API do Electron não disponível. Verifique o preload.js.');
+    }
+
+    const devices = await window.electronAPI.listDevices();
+    const listEl = document.getElementById('devices-list');
+
+    if (!listEl) return; // tela foi trocada enquanto aguardava
+
+    if (!devices || devices.length === 0) {
+      listEl.innerHTML = `
+        <p class="loading-text"><i class="fa-solid fa-circle-exclamation"></i> Nenhum dispositivo encontrado.</p>
+        <div style="text-align:center;margin-top:12px;">
+          <button class="btn-secondary" id="btn-retry-devices" style="width:auto;padding:8px 24px;">
+            <i class="fa-solid fa-rotate-right"></i> Atualizar
+          </button>
+        </div>
+      `;
+      document.getElementById('btn-retry-devices')?.addEventListener('click', showDeviceScreen);
+      return;
+    }
+
+    listEl.innerHTML = devices.map((device) => `
+      <button class="device-card" data-device-id="${escapeHtml(String(device.id))}">
+        <span class="device-icon">${getDeviceIcon(device.type)}</span>
+        <div class="device-info">
+          <strong>${escapeHtml(device.label)}</strong>
+          ${device.size && device.size !== '—' ? `<span>${escapeHtml(device.size)}</span>` : ''}
+        </div>
+      </button>
+    `).join('');
+
+    listEl.querySelectorAll('.device-card').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const deviceId = btn.getAttribute('data-device-id');
+        selectedDevice = devices.find((d) => String(d.id) === deviceId) || { id: deviceId, label: deviceId };
+        showScanOptionsScreen();
+      });
+    });
+  } catch (err) {
+    showError('Não foi possível listar os dispositivos: ' + (err.message || err));
+  }
+}
+
+// ===== TELA 2: Opções de varredura =====
+function showScanOptionsScreen() {
+  const fileTypes = [
+    { id: 'all',    label: 'Todos os Arquivos', icon: '📁' },
+    { id: 'photo',  label: 'Fotos',             icon: '🖼️' },
+    { id: 'video',  label: 'Vídeos',            icon: '🎬' },
+    { id: 'audio',  label: 'Músicas',           icon: '🎵' },
+    { id: 'doc',    label: 'Documentos',        icon: '📄' },
+  ];
+
+  wizardEl.innerHTML = `
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1>⚙️ Tipo de Arquivo</h1>
+        <p>Escolha o que deseja recuperar em <strong>${escapeHtml(selectedDevice.label || selectedDevice.id)}</strong>.</p>
+      </header>
+
+      <div class="filetype-grid">
+        ${fileTypes.map((ft) => `
+          <button class="filetype-card ${selectedFileType === ft.id ? 'selected' : ''}" data-type="${ft.id}">
+            <span class="filetype-icon">${ft.icon}</span>
+            <span>${escapeHtml(ft.label)}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="scan-actions">
+        <button class="btn-secondary" id="btn-back-devices">← Voltar</button>
+        <button class="btn-primary" id="btn-start-scan">Iniciar Varredura</button>
+      </div>
+    </section>
+  `;
+
+  wizardEl.querySelectorAll('.filetype-card').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      wizardEl.querySelectorAll('.filetype-card').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedFileType = btn.getAttribute('data-type');
     });
   });
+
+  document.getElementById('btn-back-devices')?.addEventListener('click', showDeviceScreen);
+  document.getElementById('btn-start-scan')?.addEventListener('click', runScan);
 }
 
-function showLoginPrompt(planId) {
-  const plan = cachedPlans.find((item) => item.id === planId) || DEFAULT_PLANS.find((item) => item.id === planId);
-  const price = plan ? formatCurrency(plan.price) : 'Plano';
-  const interval = plan && plan.interval ? `/${plan.interval}` : '';
-
+// ===== TELA 3: Varredura em progresso + resultados =====
+async function runScan() {
   wizardEl.innerHTML = `
-    <section class="plans-container">
-      <header class="plans-header">
-        <h1>Faça login para continuar</h1>
-        <p>${escapeHtml(plan ? plan.name : 'Plano PRO')} - ${escapeHtml(price)}${escapeHtml(interval)}</p>
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1>⏳ Varrendo...</h1>
+        <p>Aguarde enquanto buscamos arquivos recuperáveis em <strong>${escapeHtml(selectedDevice.label || selectedDevice.id)}</strong>.</p>
       </header>
-
-      <div class="plans-grid">
-        <article class="plan-card pro-card">
-          <div class="plan-features">
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Login necessário para planos pagos</span></div>
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Use o botão abaixo para login de teste</span></div>
-          </div>
-          <button class="btn-primary" id="btn-test-login">Entrar com /auth/test-login</button>
-          <button class="btn-secondary" id="btn-back-plans">Voltar aos planos</button>
-        </article>
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" id="progress-bar" style="width:0%"></div>
       </div>
+      <p class="progress-label" id="progress-label">0%</p>
     </section>
   `;
 
-  const testLoginButton = document.getElementById('btn-test-login');
-  const backButton = document.getElementById('btn-back-plans');
+  // Simula progresso visual antes de chamar o IPC
+  let pct = 0;
+  const progressBar = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+  const ticker = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 12, 90);
+    if (progressBar) progressBar.style.width = pct.toFixed(0) + '%';
+    if (progressLabel) progressLabel.textContent = pct.toFixed(0) + '%';
+  }, 200);
 
-  if (testLoginButton) {
-    testLoginButton.addEventListener('click', handleTestLogin);
-  }
+  try {
+    const result = await window.electronAPI.startScan(selectedDevice.id || selectedDevice, selectedFileType);
+    clearInterval(ticker);
+    if (progressBar) progressBar.style.width = '100%';
+    if (progressLabel) progressLabel.textContent = '100%';
 
-  if (backButton) {
-    backButton.addEventListener('click', showPlansScreen);
-  }
-}
-
-function showHomeScreen(planId) {
-  const isFree = planId === 'free';
-  const title = isFree ? 'Plano FREE ativo' : 'Plano PRO ativo';
-  const subtitle = isFree ? 'Você está usando os recursos gratuitos.' : 'Seu acesso PRO está pronto para uso.';
-
-  wizardEl.innerHTML = `
-    <section class="plans-container">
-      <header class="plans-header">
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(subtitle)}</p>
-      </header>
-
-      <div class="plans-grid">
-        <article class="plan-card ${isFree ? 'free-card' : 'pro-card'}">
-          <div class="plan-features">
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Home simplificada carregada</span></div>
-            <div class="feature-item included"><span class="feature-icon">✓</span><span>Você pode voltar aos planos quando quiser</span></div>
-          </div>
-          <button class="btn-secondary" id="btn-return-plans">Voltar aos planos</button>
-        </article>
-      </div>
-    </section>
-  `;
-
-  const returnButton = document.getElementById('btn-return-plans');
-  if (returnButton) {
-    returnButton.addEventListener('click', showPlansScreen);
+    scannedFiles = (result && result.files) ? result.files : [];
+    setTimeout(() => showResultsScreen(), 400);
+  } catch (err) {
+    clearInterval(ticker);
+    showError('Falha na varredura: ' + (err.message || err));
   }
 }
 
-function selectPlan(planId) {
-  selectedPlan = planId;
-
-  if (planId === 'free') {
-    showHomeScreen('free');
+// ===== TELA 4: Resultados da varredura =====
+function showResultsScreen() {
+  if (scannedFiles.length === 0) {
+    wizardEl.innerHTML = `
+      <section class="scan-container">
+        <header class="scan-header">
+          <h1>😔 Nenhum arquivo encontrado</h1>
+          <p>Não foram encontrados arquivos recuperáveis neste dispositivo.</p>
+        </header>
+        <button class="btn-secondary" id="btn-new-scan">← Nova Varredura</button>
+      </section>
+    `;
+    document.getElementById('btn-new-scan')?.addEventListener('click', showDeviceScreen);
     return;
   }
 
-  showLoginPrompt(planId);
+  wizardEl.innerHTML = `
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1>✅ ${scannedFiles.length} arquivo(s) encontrado(s)</h1>
+        <p>Selecione os arquivos que deseja recuperar.</p>
+      </header>
+
+      <div class="results-toolbar">
+        <label class="select-all-label">
+          <input type="checkbox" id="chk-select-all" /> Selecionar tudo
+        </label>
+        <span class="results-count" id="selected-count">0 selecionado(s)</span>
+      </div>
+
+      <div class="results-list">
+        ${scannedFiles.map((file) => `
+          <label class="result-item status-${escapeHtml((file.status || 'bom').toLowerCase())}">
+            <input type="checkbox" class="file-checkbox" data-file-id="${escapeHtml(String(file.id))}" />
+            <div class="result-info">
+              <strong>${escapeHtml(file.name)}</strong>
+              <span>${escapeHtml(file.type)} · ${escapeHtml(file.size)} · ${escapeHtml(file.path)}</span>
+            </div>
+            <span class="result-status status-badge-${escapeHtml((file.status || 'bom').toLowerCase())}">${escapeHtml(file.status || 'Bom')}</span>
+          </label>
+        `).join('')}
+      </div>
+
+      <div class="scan-actions">
+        <button class="btn-secondary" id="btn-back-scan">← Nova Varredura</button>
+        <button class="btn-primary" id="btn-recover">💾 Recuperar Selecionados</button>
+      </div>
+    </section>
+  `;
+
+  const allCheckboxes = () => wizardEl.querySelectorAll('.file-checkbox');
+  const updateCount = () => {
+    const count = wizardEl.querySelectorAll('.file-checkbox:checked').length;
+    const el = document.getElementById('selected-count');
+    if (el) el.textContent = `${count} selecionado(s)`;
+  };
+
+  document.getElementById('chk-select-all')?.addEventListener('change', (e) => {
+    allCheckboxes().forEach((chk) => { chk.checked = e.target.checked; });
+    updateCount();
+  });
+
+  allCheckboxes().forEach((chk) => chk.addEventListener('change', updateCount));
+
+  document.getElementById('btn-back-scan')?.addEventListener('click', showDeviceScreen);
+  document.getElementById('btn-recover')?.addEventListener('click', handleRecover);
 }
 
-async function handleTestLogin() {
+// ===== TELA 5: Recuperação =====
+async function handleRecover() {
+  const checkedIds = Array.from(wizardEl.querySelectorAll('.file-checkbox:checked'))
+    .map((chk) => chk.getAttribute('data-file-id'));
+
+  if (checkedIds.length === 0) {
+    alert('Selecione ao menos um arquivo para recuperar.');
+    return;
+  }
+
+  const destination = await window.electronAPI.chooseDestination();
+  if (!destination) return;
+
+  const filesToRecover = scannedFiles.filter((f) => checkedIds.includes(String(f.id)));
+
+  wizardEl.innerHTML = `
+    <section class="scan-container">
+      <header class="scan-header">
+        <h1>⏳ Recuperando arquivos...</h1>
+        <p>Copiando ${filesToRecover.length} arquivo(s) para:<br><code>${escapeHtml(destination)}</code></p>
+      </header>
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" style="width:60%"></div>
+      </div>
+    </section>
+  `;
+
   try {
-    const payload = {
-      email: `user_${Date.now()}@filesfy.test`,
-      name: `Usuário Teste ${Math.floor(Math.random() * 1000)}`
-    };
-
-    const response = await fetch(`${API_BASE_URL}/auth/test-login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (!data || !data.user || !data.token) {
-      throw new Error('Resposta de login inválida');
-    }
-
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('user_data', JSON.stringify(data.user));
-    currentUser = data.user;
-    updateHeader();
-    showHomeScreen(selectedPlan || 'pro');
-  } catch (error) {
+    const result = await window.electronAPI.recoverFiles(filesToRecover, destination);
     wizardEl.innerHTML = `
-      <section class="plans-container">
-        <header class="plans-header">
-          <h1>Erro no login de teste</h1>
-          <p>Não foi possível autenticar no endpoint /auth/test-login.</p>
+      <section class="scan-container">
+        <header class="scan-header">
+          <h1>🎉 Recuperação concluída!</h1>
+          <p>
+            <strong>${result.recovered}</strong> arquivo(s) recuperado(s) com sucesso.<br>
+            ${result.failed > 0 ? `<span class="warn-text">⚠️ ${result.failed} arquivo(s) falharam.</span>` : ''}
+          </p>
         </header>
-
-        <div class="plans-grid">
-          <article class="plan-card pro-card">
-            <div class="plan-features">
-              <div class="feature-item excluded"><span class="feature-icon">✗</span><span>${escapeHtml(error.message || 'Erro desconhecido')}</span></div>
-            </div>
-            <button class="btn-secondary" id="btn-retry-plans">Voltar aos planos</button>
-          </article>
+        <div class="scan-actions">
+          <button class="btn-secondary" id="btn-new-scan-final">← Iniciar Nova Varredura</button>
         </div>
       </section>
     `;
-
-    const retryButton = document.getElementById('btn-retry-plans');
-    if (retryButton) {
-      retryButton.addEventListener('click', showPlansScreen);
-    }
+    document.getElementById('btn-new-scan-final')?.addEventListener('click', showDeviceScreen);
+  } catch (err) {
+    showError('Falha ao recuperar arquivos: ' + (err.message || err));
   }
 }
 
-function setupLogout() {
-  if (!logoutBtn) {
-    return;
-  }
-
-  logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
-    currentUser = null;
-    selectedPlan = null;
-    updateHeader();
-    showPlansScreen();
-  });
-}
-
+// ===== Inicialização (sem login, vai direto para dispositivos) =====
 async function init() {
   wizardEl = document.getElementById('wizard');
-  userInfoEl = document.getElementById('user-info');
-  logoutBtn = document.getElementById('logout-btn');
+  if (!wizardEl) return;
 
-  if (!wizardEl) {
-    return;
-  }
+  // Aplica tema salvo ou detecta do sistema
+  try {
+    const theme = await window.electronAPI.getTheme();
+    document.body.className = `theme-${theme}`;
+    window.electronAPI.onThemeChanged((t) => { document.body.className = `theme-${t}`; });
+  } catch (_) { /* sem tema, sem problema */ }
 
-  currentUser = getStoredUser();
-  setupLogout();
-  updateHeader();
-
-  await loadPlans();
-  showPlansScreen();
+  showDeviceScreen();
 }
 
 if (document.readyState === 'loading') {

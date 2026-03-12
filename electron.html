@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Filesfy - Recuperação de Dados</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./fontawesome/css/all.min.css" />
 </head>
 <body class="theme-light">
   <div id="app">
     <header class="app-header">
       <div class="header-left">
-        <img src="../filesfyfrontend/src/images/FilesFy.png" alt="Filesfy Logo" class="logo-image-desktop" onerror="this.style.display='none'">
+        <img src="./images/FilesFy.png" alt="Filesfy Logo" class="logo-image-desktop" onerror="this.style.display='none'">
         <h1>Filesfy - Recuperação de Dados</h1>
       </div>
       <div class="header-right">
-        <span id="user-info" class="user-info" hidden></span>
-        <button id="logout-btn" class="btn-logout" hidden>Sair</button>
+        <span class="app-version">v1.0.0</span>
       </div>
     </header>
 
@@ -23,6 +23,13 @@
 
     <footer class="app-footer">
       <p>© 2026 Filesfy Inc. Todos os direitos reservados.</p>
+      <div class="footer-links">
+        <button class="footer-link" onclick="window.electronAPI.openLegal('privacy')">Política de Privacidade</button>
+        <span class="footer-sep">·</span>
+        <button class="footer-link" onclick="window.electronAPI.openLegal('license')">Contrato de Licença</button>
+        <span class="footer-sep">·</span>
+        <button class="footer-link" onclick="window.electronAPI.openLegal('terms')">Termos e Condições</button>
+      </div>
     </footer>
   </div>
 

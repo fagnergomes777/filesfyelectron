@@ -1,13 +1,136 @@
 {
-  "name": "filesfyelectron",
+  "name": "filesfy",
   "version": "1.0.0",
+  "description": "Filesfy - Recuperacao de Arquivos Deletados",
   "main": "main.js",
+  "author": "Filesfy Inc.",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "build": {
+    "appId": "com.filesfy.app",
+    "productName": "Filesfy",
+    "copyright": "Copyright 2026 Filesfy Inc.",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build-icons/icons"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "electron.html",
+      "electron-renderer.js",
+      "styles.css",
+      "fontawesome/**/*",
+      "images/**/*",
+      "legal/**/*",
+      "package.json"
+    ],
+    "icon": "build-icons/icons",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-icons/icons/win/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "build-icons/icons/win/icon.ico",
+      "uninstallerIcon": "build-icons/icons/win/icon.ico",
+      "installerHeaderIcon": "build-icons/icons/win/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Filesfy",
+      "language": "1046"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build-icons/icons/mac/icon.icns",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Filesfy ${version}",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 220,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-icons/icons/png",
+      "category": "Utility",
+      "description": "Aplicacao de recuperacao de arquivos deletados"
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6"
+      ]
+    }
+  },
   "devDependencies": {
-    "electron": "^40.2.1"
+    "electron": "^35.0.0",
+    "electron-builder": "^24.13.3"
   }
 }

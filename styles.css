@@ -609,6 +609,42 @@ button[class*="btn-"] {
   flex-shrink: 0;
 }
 
+.file-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.file-thumb.image-thumb {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.file-thumb.icon-thumb {
+  color: #64748b;
+  position: relative;
+}
+
+.file-thumb.icon-thumb i {
+  font-size: 20px;
+}
+
+.file-thumb.icon-thumb .file-ext-label {
+  font-size: 9px;
+  font-weight: 700;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
 .result-info {
   flex: 1;
   display: flex;
@@ -845,6 +881,12 @@ body.theme-dark .result-item {
 
 body.theme-dark .result-item:hover {
   background: #0f2236;
+}
+
+body.theme-dark .file-thumb {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #94a3b8;
 }
 
 body.theme-dark .result-info strong {

@@ -14,17 +14,51 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function showError(message) {
-  wizardEl.innerHTML = `
-    <section class="scan-container">
-      <header class="scan-header">
-        <h1>❌ Erro</h1>
-        <p>${escapeHtml(message)}</p>
-      </header>
-      <button class="btn-primary" id="btn-retry">Tentar novamente</button>
-    </section>
-  `;
-  document.getElementById('btn-retry')?.addEventListener('click', showDeviceScreen);
+function getFilePreviewHtml(file) {
+  const fileName = file.name || '';
+  const extMatch = fileName.match(/\.([^.]+)$/);
+  const ext = extMatch ? extMatch[1].toLowerCase() : '';
+  const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'];
+  
+  if (imgExts.includes(ext) && file.path) {
+    // É uma imagem, carrega preview
+    const safePath = file.path.replace(/\\/g, '/');
+    const localUrl = `file:///${encodeURI(safePath)}`;
+    return `<div class="file-thumb image-thumb" style="background-image: url('${localUrl}');"></div>`;
+  }
+
+  // Não é imagem ou não tem caminho - decide ícone
+  let iconClass = 'fa-solid fa-file';
+  switch (ext) {
+    case 'pdf': iconClass = 'fa-solid fa-file-pdf'; break;
+    case 'doc':
+    case 'docx': iconClass = 'fa-solid fa-file-word'; break;
+    case 'xls':
+    case 'xlsx': iconClass = 'fa-solid fa-file-excel'; break;
+    case 'ppt':
+    case 'pptx': iconClass = 'fa-solid fa-file-powerpoint'; break;
+    case 'zip':
+    case 'rar':
+    case '7z':
+    case 'gz': iconClass = 'fa-solid fa-file-zipper'; break;
+    case 'mp3':
+    case 'wav':
+    case 'flac': iconClass = 'fa-solid fa-file-audio'; break;
+    case 'mp4':
+    case 'avi':
+    case 'mkv':
+    case 'mov': iconClass = 'fa-solid fa-file-video'; break;
+    case 'txt':
+    case 'md':
+    case 'csv': iconClass = 'fa-solid fa-file-lines'; break;
+    case 'html':
+    case 'js':
+    case 'css':
+    case 'json':
+    case 'xml': iconClass = 'fa-solid fa-file-code'; break;
+  }
+  const extLabel = ext ? ext.substring(0, 4).toUpperCase() : 'ARQ';
+  return `<div class="file-thumb icon-thumb"><i class="${iconClass}"></i><span class="file-ext-label">${escapeHtml(extLabel)}</span></div>`;
 }
 
 // Mapa de ícones Font Awesome por tipo de dispositivo
@@ -222,6 +256,7 @@ function showResultsScreen() {
         ${scannedFiles.map((file) => `
           <label class="result-item status-${escapeHtml((file.status || 'bom').toLowerCase())}">
             <input type="checkbox" class="file-checkbox" data-file-id="${escapeHtml(String(file.id))}" />
+            ${getFilePreviewHtml(file)}
             <div class="result-info">
               <strong>${escapeHtml(file.name)}</strong>
               <span>${escapeHtml(file.type)} · ${escapeHtml(file.size)} · ${escapeHtml(file.path)}</span>

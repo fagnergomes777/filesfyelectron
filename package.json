@@ -20,7 +20,7 @@
     "productName": "Filesfy",
     "copyright": "Copyright 2026 Filesfy Inc.",
     "directories": {
-      "output": "dist",
+      "output": "arquivos",
       "buildResources": "build-icons/icons"
     },
     "files": [

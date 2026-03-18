@@ -663,3 +663,8 @@ body.theme-dark .result-info strong {
 body.theme-dark .progress-bar-wrapper {
   background: #334155;
 }
+
+/* MELHORIAS GERAIS DE RESPONSIVIDADE (DESKTOP E MOBILE) */
+html, body { overflow-x: hidden; width: 100%; box-sizing: border-box; } * { box-sizing: inherit; }
+@media screen and (max-width: 992px) { main, .app-container { flex-direction: column !important; padding: 15px; } .sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--border-color); } .grid-container, .card-grid { grid-template-columns: 1fr !important; } .header { flex-direction: column; align-items: flex-start; gap: 10px; height: auto; padding: 15px; } .content-area, .file-list, .workspace-area { width: 100% !important; flex: 1 1 auto; } }
+@media screen and (max-width: 480px) { body { font-size: 14px; } .btn, button { width: 100%; } .list-item { flex-direction: column; align-items: flex-start; } .list-item-actions { margin-top: 10px; width: 100%; justify-content: space-between; } .modal { width: 95% !important; max-width: none !important; margin: 10px; } }

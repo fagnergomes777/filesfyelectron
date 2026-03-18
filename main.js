@@ -17,6 +17,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900, height: 600, resizable: true, maximizable: true,
     fullscreenable: true, center: true,
+    icon: path.join(__dirname, 'images', 'FilesFy.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false, contextIsolation: true
